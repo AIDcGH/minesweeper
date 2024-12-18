@@ -31,6 +31,20 @@ function countNegs(mat, cellI, cellJ) {
     return count
 }
 
+function findNegs(mat, cellI, cellJ) {
+    var negs = []
+    for (var i = cellI - 1; i <= cellI + 1; i++) {
+        if (i < 0 || i >= mat.length) continue
+        for (var j = cellJ - 1; j <= cellJ + 1; j++) {
+            if (i === cellI && j === cellJ) continue
+            if (j < 0 || j >= mat[i].length) continue
+
+            negs.push(mat[i][j])
+        }
+    }
+    return negs
+}
+
 function renderCell(location, value) {
     const elCell = document.querySelector(`.cell-${location.i}-${location.j}`)
     elCell.innerHTML = value

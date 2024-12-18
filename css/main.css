@@ -1,6 +1,6 @@
 html {
     --table-lines-clr: #759;
-    font-size: 28px;
+    font-size: 24px;
 }
 
 body {
@@ -9,14 +9,21 @@ body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
+.status {
+    background-color: transparent;
+    border: none;
+    font-size: 2.5rem;
+    cursor: pointer;
+}
+
 table {
     margin: 100px auto;
-    border: .3em solid var(--table-lines-clr);
+    border: .3rem solid var(--table-lines-clr);
 }
 
 .cell {
-    width: 10vw;
-    height: 10vw;
+    width: 8vw;
+    height: 8vw;
     border: 1px solid var(--table-lines-clr);
     background-color: #296;
     transition: 300ms;
@@ -26,7 +33,7 @@ table {
 }
 
 .unshown {
-    font-size: 0 ;
+    color: transparent;
 }
 
 .unshown:hover {
