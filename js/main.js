@@ -12,7 +12,6 @@ var gGame
 var gBoard
 var gVacantCells
 var gMines
-var gMoves
 
 var gTimer
 
@@ -30,18 +29,22 @@ function resetGame() {
         secsPassed: 0,
         lives: 3,
         isHint: false,
-        safeClickCount: 3
+        safeClickCount: 3,
+        isCustom: false,
+        isCustomStart: false,
+        megaHint: { isActive: false, isUsed: false, coords1: null }
     }
     gVacantCells = []
     gMines = []
-    gMoves = []
     buildBoard()
+
     renderBoard(gBoard)
 
     document.querySelector('.status').innerHTML = STATUS
     document.querySelector('.lives').innerHTML = gGame.lives
     document.querySelector('.timer').innerHTML = gGame.secsPassed
     document.querySelector('.safe span').innerHTML = gGame.safeClickCount
+    document.querySelector('.custom-game').style.display = 'inline'
     var hints = document.querySelectorAll('.hints')
     for (let i = 0; i < hints.length; i++) {
         hints[i].onclick = () => activateHint(hints[i])
@@ -96,12 +99,12 @@ function renderBoard(board) {
     document.querySelector('.board').innerHTML = strHTML
 }
 
-function startGame(i, j) {
+function startGame() {
     gGame.isOn = true
 
     gTimer = setInterval(timer, 1000)
 
-    spawnMines()
+    if (!gGame.isCustom) spawnMines()
     setMinesNegsCount(gBoard)
 }
 
@@ -122,7 +125,7 @@ function setMinesNegsCount(board) {
         for (var j = 0; j < board[0].length; j++) {
             var curMineCount = gBoard[i][j].minesAroundCount = countNegs(board, i, j)
 
-            if (curMineCount && !gBoard[i][j].isMine) renderCell({ i, j }, curMineCount)
+            if (!gBoard[i][j].isMine) renderCell({ i, j }, curMineCount ? curMineCount : null)
         }
     }
 }
@@ -132,8 +135,20 @@ function onCellClicked(elCell, i, j) {
     if (!gGame.isOn && gGame.shownCount) return
 
     if (gGame.isHint) {
-        hint(gBoard, elCell, i, j)
+        hint(gBoard, i, j)
         return
+    }
+    if (gGame.megaHint.isActive) {
+        megaHint(i, j)
+        return
+    }
+    if (gGame.isCustom) {
+        document.querySelector('.custom-game').style.display = 'none'
+        if (gMines.length < gLevel.mines) {
+            customGameAdd(elCell, i, j)
+            return
+        } 
+        if(!gGame.isCustomStart) customGameStart(gMines)
     }
 
     gBoard[i][j].isShown = true
@@ -147,12 +162,12 @@ function onCellClicked(elCell, i, j) {
 
     if (gBoard[i][j].isMine) {
         gGame.lives--
-        gBoard[i][j].isMarked = true
 
         document.querySelector('div span').innerHTML = gGame.lives
         elCell.style.color = 'red'
 
         if (!gGame.lives) gameOver()
+        checkGameOver()
         return
     }
 
@@ -224,23 +239,6 @@ function timer() {
     gGame.secsPassed++
 }
 
-function hint(board, elClickedCell, cellI, cellJ) {
-    gGame.isHint = false
-    var timeoutHint = NaN
-    clearTimeout(timeoutHint)
-
-    var negs = findNegs(board, cellI, cellJ, true)
-
-    elClickedCell.classList.remove('unshown')
-    timeoutHint = setTimeout(() => elClickedCell.classList.add('unshown'), 1000)
-    for (var i = 0; i < negs.length; i++) {
-        // const elCell = document.querySelector(`.cell-${negs[i].i}-${negs[i].j}`)
-        // elCell.classList.remove('unshown')
-        // timeoutHint = setTimeout(() => elCell.classList.add('unshown'), 1000)
-        renderHint(negs[i].i, negs[i].j, timeoutHint, 1000)
-    }
-}
-
 function activateHint(elHint) {
     if (!gGame.isOn) return
     gGame.isHint = true
@@ -249,12 +247,26 @@ function activateHint(elHint) {
     elHint.style.opacity = 0.4
 }
 
-function renderHint(i, j, timeoutHint, timeoutTime) {
-    const elCell = document.querySelector(`.cell-${i}-${j}`)
-    elCell.classList.remove('unshown')
-    timeoutHint = setTimeout(() => elCell.classList.add('unshown'), timeoutTime)
+function hint(board, cellI, cellJ) {
+    gGame.isHint = false
+
+    var negs = findNegs(board, cellI, cellJ, true)
+
+    for (var i = 0; i < negs.length; i++) {
+        renderHint(negs[i].i, negs[i].j, 1000)
+    }
 }
 
+function renderHint(i, j, timeoutTime) {
+    gBoard[i][j].isMarked = true
+
+    const elCell = document.querySelector(`.cell-${i}-${j}`)
+    elCell.classList.remove('unshown')
+    setTimeout(function () {
+        elCell.classList.add('unshown')
+        gBoard[i][j].isMarked = false
+    }, timeoutTime)
+}
 
 function safeClick() {
     if (!gGame.isOn || !gGame.safeClickCount || !gVacantCells.length) return
@@ -271,14 +283,63 @@ function safeClick() {
     timeoutSafe = setTimeout(() => elSafeCell.classList.remove('safe'), 3000)
 }
 
-function customGame() {
-
+function customGameAdd(elCell, i, j) {
+    const mine = { i, j }
+    occupy(mine, gVacantCells)
+    gBoard[i][j].isMine = true
+    gBoard[i][j].isMarked = true
+    gMines.push(mine)
+    
+    elCell.innerHTML = MINE
+    elCell.classList.add('safe')
 }
 
-function megaHint() {
-    // push moves for every OCC activation, then pop
+function customGameStart(mines) {
+    gGame.isCustomStart = true
+    for (var i = 0; i < mines.length; i++) {
+        gBoard[mines[i].i][mines[i].j].isMarked = false
+        
+        const elMine = document.querySelector(`.cell-${mines[i].i}-${mines[i].j}`)
+        elMine.classList.remove('safe')
+    }
+}
+
+function activateMegaHint() {
+    if (!gGame.isOn || gGame.megaHint.isUsed) return
+
+    gGame.megaHint.isUsed = gGame.megaHint.isActive = true
+}
+
+function megaHint(cellI, cellJ) {
+    if (!gGame.megaHint.coords1) {
+        gGame.megaHint.coords1 = { i: cellI, j: cellJ }
+
+        document.querySelector(`.cell-${cellI}-${cellJ}`).classList.add('safe')
+        return
+    }
+
+    gGame.megaHint.isActive = false
+
+
+    var smallerI = Math.min(gGame.megaHint.coords1.i, cellI)
+    var biggerI = Math.max(gGame.megaHint.coords1.i, cellI)
+    var smallerJ = Math.min(gGame.megaHint.coords1.j, cellJ)
+    var biggerJ = Math.max(gGame.megaHint.coords1.j, cellJ)
+
+    for (var i = smallerI; i <= biggerI; i++) {
+        for (var j = smallerJ; j <= biggerJ; j++) {
+            renderHint(i, j, 2000)
+        }
+    }
+    document.querySelector(`.cell-${gGame.megaHint.coords1.i}-${gGame.megaHint.coords1.j}`).classList.remove('safe')
 }
 
 function mineExterminator() {
-
+    if (!gGame.isOn) return
+    for (var i = 0; i < Math.min(gLevel.mines, 3); i++) {
+        var mineCoords = gMines.pop()
+        gBoard[mineCoords.i][mineCoords.j].isMine = false
+        renderCell(mineCoords, null)
+    }
+    setMinesNegsCount(gBoard)
 }

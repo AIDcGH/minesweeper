@@ -53,6 +53,7 @@ table {
 
 .unshown {
     color: transparent;
+    user-select: none;
 }
 
 .unshown:hover {
@@ -71,4 +72,8 @@ table {
 
 .safe {
     background-color: #3e3;
+}
+
+footer{
+    margin: 1rem;
 }
