@@ -1,23 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minesweeper</title>
     <link rel="stylesheet" href="css/main.css" />
 </head>
+
 <body onload="onInit()">
     <h1>Sweep those mines!</h1>
-    <div>
+    <div class="container">
         <div>lives: <span class="lives"></span></div>
-        <div>secs: <span class="timer"></span></div>
         <button class="status" onclick="resetGame()"></button>
+        <div>secs: <span class="timer"></span></div>
+    </div>
+
+    <div class="sizes">
+        <button class="size-button" onclick="changeSize(4)">Beginner- 4x4, 2 mines</button>
+        <button class="size-button" onclick="changeSize(8)">Medium- 8x8, 14 mines</button>
+        <button class="size-button" onclick="changeSize(12)">Expert- 12x12, 32 mines</button>
     </div>
     <table>
         <tbody class="board"></tbody>
     </table>
+
     <footer>Aviv C</footer>
     <script src="js/main.js"></script>
     <script src="js/util.js"></script>
 </body>
+
 </html>

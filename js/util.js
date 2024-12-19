@@ -25,7 +25,7 @@ function countNegs(mat, cellI, cellJ) {
             if (i === cellI && j === cellJ) continue
             if (j < 0 || j >= mat[i].length) continue
 
-            if(mat[i][j].isMine) count++
+            if (mat[i][j].isMine) count++
         }
     }
     return count
@@ -39,7 +39,7 @@ function findNegs(mat, cellI, cellJ) {
             if (i === cellI && j === cellJ) continue
             if (j < 0 || j >= mat[i].length) continue
 
-            negs.push(mat[i][j])
+            if (!mat[i][j].isShown && !mat[i][j].isMine) negs.push({ i, j })
         }
     }
     return negs
@@ -51,5 +51,5 @@ function renderCell(location, value) {
 }
 
 function occupy(coords, arr) {
-	return arr.splice(arr.findIndex(c => c.i === coords.i && c.j === coords.j), 1)[0]
+    return arr.splice(arr.findIndex(c => c.i === coords.i && c.j === coords.j), 1)[0]
 }
