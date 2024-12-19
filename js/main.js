@@ -23,7 +23,15 @@ function onInit() {
 
 function resetGame() {
     clearInterval(gTimer)
-    gGame = { isOn: false, shownCount: 0, markedCount: 0, secsPassed: 0, lives: 3, isHint: false }
+    gGame = {
+        isOn: false,
+        shownCount: 0,
+        markedCount: 0,
+        secsPassed: 0,
+        lives: 3,
+        isHint: false,
+        safeClickCount: 3
+    }
     gVacantCells = []
     gMines = []
     gMoves = []
@@ -33,6 +41,12 @@ function resetGame() {
     document.querySelector('.status').innerHTML = STATUS
     document.querySelector('.lives').innerHTML = gGame.lives
     document.querySelector('.timer').innerHTML = gGame.secsPassed
+    document.querySelector('.safe span').innerHTML = gGame.safeClickCount
+    var hints = document.querySelectorAll('.hints')
+    for (let i = 0; i < hints.length; i++) {
+        hints[i].onclick = () => activateHint(hints[i])
+        hints[i].style.opacity = 1
+    }
 }
 
 function changeSize(size) {
@@ -87,21 +101,19 @@ function startGame(i, j) {
 
     gTimer = setInterval(timer, 1000)
 
-    occupy({ i, j }, gVacantCells)
-
     spawnMines()
     setMinesNegsCount(gBoard)
 }
 
 function spawnMines() {
     for (var i = 0; i < gLevel.mines; i++) {
-        var mine = gVacantCells.splice(getRandomInt(0, gVacantCells.length), 1)[0]
+        var mine = occupyRandom(gVacantCells)
         gBoard[mine.i][mine.j].isMine = true
         gMines.push(mine)
 
         renderCell(mine, MINE)
 
-        console.log(mine) // easy to check
+        console.log(mine) // to find the random mines
     }
 }
 
@@ -119,13 +131,19 @@ function onCellClicked(elCell, i, j) {
     if (gBoard[i][j].isShown || gBoard[i][j].isMarked) return
     if (!gGame.isOn && gGame.shownCount) return
 
-    if (gGame.isHint) hint(elCell, i, j)
+    if (gGame.isHint) {
+        hint(gBoard, elCell, i, j)
+        return
+    }
 
     gBoard[i][j].isShown = true
     gGame.shownCount++
-    elCell.classList.replace('unshown', 'shown')
+    occupy({ i, j }, gVacantCells)
 
-    if (!gGame.isOn) startGame(i, j)
+    elCell.classList.replace('unshown', 'shown')
+    elCell.classList.remove('safe')
+
+    if (!gGame.isOn) startGame()
 
     if (gBoard[i][j].isMine) {
         gGame.lives--
@@ -193,7 +211,7 @@ function gameOver(isVic = false) {
     }
 }
 
-function expandShown(board, i, j, isOnlyNegs) {
+function expandShown(board, i, j) {
     var negs = findNegs(board, i, j)
     for (var i = 0; i < negs.length; i++) {
         const elCell = document.querySelector(`.cell-${negs[i].i}-${negs[i].j}`)
@@ -206,22 +224,61 @@ function timer() {
     gGame.secsPassed++
 }
 
-function hint(elCell, i, j) {
+function hint(board, elClickedCell, cellI, cellJ) {
+    gGame.isHint = false
+    var timeoutHint = NaN
+    clearTimeout(timeoutHint)
 
+    var negs = findNegs(board, cellI, cellJ, true)
+
+    elClickedCell.classList.remove('unshown')
+    timeoutHint = setTimeout(() => elClickedCell.classList.add('unshown'), 1000)
+    for (var i = 0; i < negs.length; i++) {
+        // const elCell = document.querySelector(`.cell-${negs[i].i}-${negs[i].j}`)
+        // elCell.classList.remove('unshown')
+        // timeoutHint = setTimeout(() => elCell.classList.add('unshown'), 1000)
+        renderHint(negs[i].i, negs[i].j, timeoutHint, 1000)
+    }
 }
 
-function safeClick() {
+function activateHint(elHint) {
+    if (!gGame.isOn) return
+    gGame.isHint = true
 
+    elHint.onclick = null
+    elHint.style.opacity = 0.4
+}
+
+function renderHint(i, j, timeoutHint, timeoutTime) {
+    const elCell = document.querySelector(`.cell-${i}-${j}`)
+    elCell.classList.remove('unshown')
+    timeoutHint = setTimeout(() => elCell.classList.add('unshown'), timeoutTime)
+}
+
+
+function safeClick() {
+    if (!gGame.isOn || !gGame.safeClickCount || !gVacantCells.length) return
+    gGame.safeClickCount--
+    var timeoutSafe = NaN
+    clearTimeout(timeoutSafe)
+
+    const safeCoords = occupyRandom(gVacantCells)
+    gVacantCells.push(safeCoords)
+
+    document.querySelector('.safe span').innerHTML = gGame.safeClickCount
+    const elSafeCell = document.querySelector(`.cell-${safeCoords.i}-${safeCoords.j}`)
+    elSafeCell.classList.add('safe')
+    timeoutSafe = setTimeout(() => elSafeCell.classList.remove('safe'), 3000)
 }
 
 function customGame() {
-    
+
 }
 
-function undo() {
+function megaHint() {
     // push moves for every OCC activation, then pop
 }
 
 function mineExterminator() {
-    
+
 }

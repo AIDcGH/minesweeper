@@ -25,7 +25,6 @@ body {
 
 .sizes{
     display:table;
-
 }
 
 .size-button{
@@ -63,4 +62,13 @@ table {
 
 .shown {
     background-color: transparent;
+}
+
+.hints{
+    cursor: pointer;
+    
+}
+
+.safe {
+    background-color: #3e3;
 }
